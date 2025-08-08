@@ -30,7 +30,9 @@ class Config:
     def validate(cls):
         """Validate required configuration"""
         if not cls.OPENAI_API_KEY:
-            raise ValueError("OPENAI_API_KEY environment variable is required")
+            # In Vercel, allow empty API key during build time
+            if not os.environ.get('VERCEL'):
+                raise ValueError("OPENAI_API_KEY environment variable is required")
     
     @classmethod
     def create_directories(cls):

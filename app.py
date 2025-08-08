@@ -26,19 +26,32 @@ def create_app():
     # Validate and load configuration
     try:
         Config.validate()
-        Config.create_directories()
+        # Only create directories locally, not in serverless
+        if not os.environ.get('VERCEL'):
+            Config.create_directories()
     except ValueError as e:
         logger.error(f"Configuration error: {e}")
-        raise
+        if not os.environ.get('VERCEL'):
+            raise
     
     # Configure OpenAI
     openai.api_key = Config.OPENAI_API_KEY
     
-    # Initialize Knowledge Base
+    # Initialize Knowledge Base with appropriate directories
+    if os.environ.get('VERCEL'):
+        # In Vercel, use /tmp for temporary storage
+        kb_dir = '/tmp/knowledge_base'
+        cache_dir = '/tmp/embeddings_cache'
+        os.makedirs(kb_dir, exist_ok=True)
+        os.makedirs(cache_dir, exist_ok=True)
+    else:
+        kb_dir = Config.KNOWLEDGE_BASE_DIR
+        cache_dir = Config.EMBEDDINGS_CACHE_DIR
+    
     logger.info("Initializing knowledge base...")
     knowledge_base = KnowledgeBase(
-        knowledge_base_dir=Config.KNOWLEDGE_BASE_DIR,
-        embeddings_cache_dir=Config.EMBEDDINGS_CACHE_DIR,
+        knowledge_base_dir=kb_dir,
+        embeddings_cache_dir=cache_dir,
         chunk_size=Config.CHUNK_SIZE,
         chunk_overlap=Config.CHUNK_OVERLAP,
         similarity_threshold=Config.SIMILARITY_THRESHOLD

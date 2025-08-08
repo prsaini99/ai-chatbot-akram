@@ -1,14 +1,29 @@
+# Local development files
+.env
+.env.local
+venv/
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
-.env
-.venv
-venv/
+
+# Local directories
 knowledge_base/
 embeddings_cache/
 settings/
+
+# Development files
 run.py
 README.md
+
+# Git
 .git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
