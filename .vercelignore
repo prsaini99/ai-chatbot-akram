@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.env
+.venv
+venv/
+knowledge_base/
+embeddings_cache/
+settings/
+run.py
+README.md
+.git/

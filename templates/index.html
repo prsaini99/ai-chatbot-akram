@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Chatbot with Knowledge Base</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .main-container {
+            display: flex;
+            gap: 20px;
+            max-width: 1600px;
+            width: 100%;
+            height: 700px;
+        }
+        .chat-container, .kb-container, .settings-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .chat-container {
+            flex: 2;
+        }
+        .kb-container, .settings-container {
+            flex: 1;
+            min-width: 300px;
+        }
+        .chat-header, .kb-header, .settings-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+        .kb-content, .settings-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .kb-stats {
+            background: #f7f7f7;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .kb-stat {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .kb-stat:last-child {
+            border-bottom: none;
+        }
+        .kb-documents {
+            margin-top: 20px;
+        }
+        .kb-document {
+            background: #f0f0f0;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 8px 0;
+            font-size: 0.9em;
+            border-left: 4px solid #667eea;
+            transition: background-color 0.2s;
+        }
+        .kb-document:hover {
+            background: #e8e8e8;
+        }
+        .kb-document-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        .kb-document-info {
+            font-size: 0.8em;
+            color: #666;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .kb-document-type {
+            background: #667eea;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7em;
+            text-transform: uppercase;
+        }
+        .upload-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f7f7f7;
+            border-radius: 10px;
+        }
+        .upload-button {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f7f7f7;
+        }
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .message.user {
+            justify-content: flex-end;
+        }
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+        }
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .message.bot .message-content {
+            background: white;
+            color: #333;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .source-citation {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #e0e0e0;
+        }
+        .chat-input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+        }
+        #chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        #chat-input:focus {
+            border-color: #667eea;
+        }
+        #send-button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        #send-button:hover {
+            transform: scale(1.05);
+        }
+        #send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .typing-indicator {
+            display: none;
+            padding: 20px;
+            color: #666;
+        }
+        .typing-indicator.show {
+            display: block;
+        }
+        .typing-indicator span {
+            animation: blink 1.4s linear infinite;
+        }
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes blink {
+            0%, 60%, 100% { opacity: 0.2; }
+            30% { opacity: 1; }
+        }
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 0 20px;
+        }
+        .mode-button {
+            flex: 1;
+            padding: 8px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .mode-button.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .prompt-section {
+            background: #f7f7f7;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        .prompt-templates {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .template-button {
+            padding: 12px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+            font-size: 0.9em;
+        }
+        .template-button:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        .template-button.active {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .template-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .template-description {
+            font-size: 0.8em;
+            opacity: 0.8;
+        }
+        .custom-prompt-area {
+            width: 100%;
+            min-height: 120px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.9em;
+            resize: vertical;
+            margin-bottom: 10px;
+        }
+        .custom-prompt-area:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .prompt-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .prompt-button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .save-prompt-btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+        .save-prompt-btn:hover {
+            transform: scale(1.02);
+        }
+        .test-prompt-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .test-prompt-btn:hover {
+            transform: scale(1.02);
+        }
+        .reset-prompt-btn {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+        }
+        .reset-prompt-btn:hover {
+            transform: scale(1.02);
+        }
+        .prompt-status {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            text-align: center;
+        }
+        .prompt-status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .prompt-status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+                height: auto;
+            }
+            .kb-container, .settings-container {
+                height: 300px;
+            }
+            .prompt-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="chat-container">
+            <div class="chat-header">
+                AI Assistant with Knowledge Base
+            </div>
+            <div class="mode-selector" style="display: none;">
+                <!-- Mode selector hidden - only Knowledge Base mode available -->
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                <div class="message bot">
+                    <div class="message-content">
+                        Hey there! 👋 I'm absolutely thrilled to help you discover everything amazing about our products and services! I've got access to all our latest information and I'm here to find you the perfect solutions. 
+
+                        Whether you're looking for specific details, comparing options, or just exploring what we offer - I'm your personal guide to incredible value and outstanding results! 
+
+                        What can I show you first that'll get you as excited as I am? 🚀
+                    </div>
+                </div>
+            </div>
+            <div class="typing-indicator" id="typing-indicator">
+                Bot is typing<span>.</span><span>.</span><span>.</span>
+            </div>
+            <div class="chat-input-container">
+                <input type="text" id="chat-input" placeholder="Type your message..." 
+                       onkeypress="if(event.key==='Enter') sendMessage()">
+                <button id="send-button" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+        
+        <div class="kb-container">
+            <div class="kb-header">
+                Knowledge Base
+            </div>
+            <div class="kb-content">
+                <div class="kb-stats">
+                    <div class="kb-stat">
+                        <span>Documents:</span>
+                        <span id="doc-count">0</span>
+                    </div>
+                    <div class="kb-stat">
+                        <span>Total Chunks:</span>
+                        <span id="chunk-count">0</span>
+                    </div>
+                    <div class="kb-stat">
+                        <span>Status:</span>
+                        <span id="kb-status">Loading...</span>
+                    </div>
+                </div>
+                
+                <div class="upload-section">
+                    <h4>Add Document</h4>
+                    <input type="file" id="file-input" accept=".txt,.pdf,.docx,.csv,.json,.md" style="margin-top: 10px;">
+                    <button class="upload-button" onclick="uploadDocument()">Upload to Knowledge Base</button>
+                </div>
+                
+                <div class="kb-documents">
+                    <h4>Knowledge Base Documents:</h4>
+                    <div id="kb-documents-list"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="settings-container">
+            <div class="settings-header">
+                System Prompt Settings
+            </div>
+            <div class="settings-content">
+                <div class="prompt-section">
+                    <h4>Preset Templates</h4>
+                    <div class="prompt-templates">
+                        <div class="template-button active" onclick="selectTemplate('salesperson')">
+                            <div class="template-title">🚀 Sales Expert</div>
+                            <div class="template-description">Enthusiastic, persuasive, and results-focused</div>
+                        </div>
+                        <div class="template-button" onclick="selectTemplate('assistant')">
+                            <div class="template-title">🤖 AI Assistant</div>
+                            <div class="template-description">Helpful, informative, and professional</div>
+                        </div>
+                        <div class="template-button" onclick="selectTemplate('support')">
+                            <div class="template-title">🛠️ Technical Support</div>
+                            <div class="template-description">Problem-solving and solution-oriented</div>
+                        </div>
+                        <div class="template-button" onclick="selectTemplate('consultant')">
+                            <div class="template-title">💼 Business Consultant</div>
+                            <div class="template-description">Strategic, analytical, and advisory</div>
+                        </div>
+                        <div class="template-button" onclick="selectTemplate('educator')">
+                            <div class="template-title">📚 Educator</div>
+                            <div class="template-description">Teaching-focused and explanatory</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="prompt-section">
+                    <h4>Custom System Prompt</h4>
+                    <textarea id="custom-prompt" class="custom-prompt-area" 
+                             placeholder="Write your custom system prompt here..."></textarea>
+                    
+                    <div class="prompt-buttons">
+                        <button class="prompt-button save-prompt-btn" onclick="saveSystemPrompt()">Save & Apply</button>
+                        <button class="prompt-button test-prompt-btn" onclick="testSystemPrompt()">Test Only</button>
+                        <button class="prompt-button reset-prompt-btn" onclick="resetToDefault()">Reset</button>
+                    </div>
+                    
+                    <div id="prompt-status"></div>
+                </div>
+                
+                <div class="prompt-section">
+                    <h4>Current Status</h4>
+                    <div class="kb-stat">
+                        <span>Active Template:</span>
+                        <span id="active-template">Sales Expert</span>
+                    </div>
+                    <div class="kb-stat">
+                        <span>Last Updated:</span>
+                        <span id="last-updated">Just now</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let conversationId = generateId();
+        let chatMode = 'kb_only';
+        let currentTemplate = 'salesperson';
+        let customSystemPrompt = null;
+        
+        function generateId() {
+            return 'conv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+        
+        function setMode(mode) {
+            // Mode is always kb_only - this function is kept for compatibility
+            chatMode = 'kb_only';
+        }
+        
+        function appendMessage(message, isUser, sources = null) {
+            const messagesContainer = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = message;
+            
+            if (sources && sources.length > 0) {
+                const citationDiv = document.createElement('div');
+                citationDiv.className = 'source-citation';
+                citationDiv.innerHTML = '<strong>Sources:</strong> ' + 
+                    sources.map(s => s.filename).join(', ');
+                contentDiv.appendChild(citationDiv);
+            }
+            
+            messageDiv.appendChild(contentDiv);
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const sendButton = document.getElementById('send-button');
+            const typingIndicator = document.getElementById('typing-indicator');
+            
+            const message = input.value.trim();
+            if (!message) return;
+            
+            appendMessage(message, true);
+            input.value = '';
+            sendButton.disabled = true;
+            typingIndicator.classList.add('show');
+            
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        conversation_id: conversationId,
+                        mode: chatMode
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.response) {
+                    appendMessage(data.response, false, data.sources);
+                    
+                    // Update recent sources if any
+                    if (data.sources && data.sources.length > 0) {
+                        updateRecentSources(data.sources);
+                    }
+                } else if (data.error) {
+                    appendMessage('Error: ' + data.error, false);
+                }
+            } catch (error) {
+                appendMessage('Error: Failed to connect to the server.', false);
+            } finally {
+                sendButton.disabled = false;
+                typingIndicator.classList.remove('show');
+            }
+        }
+        
+        async function uploadDocument() {
+            const fileInput = document.getElementById('file-input');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a file to upload');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Document uploaded successfully!');
+                    fileInput.value = '';
+                    loadKnowledgeBaseStats();
+                } else {
+                    alert('Error uploading document: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error uploading document');
+            }
+        }
+        
+        function updateRecentSources(sources) {
+            // This function is kept for compatibility but we now use loadKnowledgeBaseStats
+            // to show all KB documents instead of just recent sources from queries
+            console.log('Recent sources used:', sources);
+        }
+        
+        async function loadKnowledgeBaseStats() {
+            try {
+                const response = await fetch('/kb-stats');
+                const data = await response.json();
+                
+                document.getElementById('doc-count').textContent = data.document_count;
+                document.getElementById('chunk-count').textContent = data.chunk_count;
+                document.getElementById('kb-status').textContent = data.status;
+                
+                // Display all knowledge base documents with details
+                if (data.documents) {
+                    const container = document.getElementById('kb-documents-list');
+                    if (data.documents.length === 0) {
+                        container.innerHTML = '<div style="color: #666; font-style: italic; text-align: center; padding: 20px;">No documents in knowledge base yet. Upload some documents to get started!</div>';
+                    } else {
+                        container.innerHTML = data.documents.map(doc => 
+                            `<div class="kb-document">
+                                <div class="kb-document-name">${doc.filename}</div>
+                                <div class="kb-document-info">
+                                    <span>${doc.chunks} chunks</span>
+                                    <span class="kb-document-type">${doc.type.replace('.', '')}</span>
+                                </div>
+                            </div>`
+                        ).join('');
+                    }
+                }
+            } catch (error) {
+                document.getElementById('kb-status').textContent = 'Error loading';
+            }
+        }
+        
+        // System Prompt Management Functions
+        const promptTemplates = {
+            salesperson: {
+                name: 'Sales Expert',
+                description: 'Enthusiastic, persuasive, and results-focused'
+            },
+            assistant: {
+                name: 'AI Assistant', 
+                description: 'Helpful, informative, and professional'
+            },
+            support: {
+                name: 'Technical Support',
+                description: 'Problem-solving and solution-oriented'
+            },
+            consultant: {
+                name: 'Business Consultant',
+                description: 'Strategic, analytical, and advisory'
+            },
+            educator: {
+                name: 'Educator',
+                description: 'Teaching-focused and explanatory'
+            }
+        };
+
+        function selectTemplate(templateId) {
+            // Update UI
+            document.querySelectorAll('.template-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.closest('.template-button').classList.add('active');
+            
+            // Clear custom prompt
+            document.getElementById('custom-prompt').value = '';
+            customSystemPrompt = null;
+            currentTemplate = templateId;
+            
+            // Load template prompt into textarea
+            loadTemplatePrompt(templateId);
+            
+            showStatus(`Selected template: ${promptTemplates[templateId].name}`, 'success');
+        }
+
+        async function loadTemplatePrompt(templateId) {
+            try {
+                const response = await fetch('/get-template-prompt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ template: templateId })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('custom-prompt').value = data.prompt;
+                }
+            } catch (error) {
+                console.error('Error loading template:', error);
+            }
+        }
+
+        async function saveSystemPrompt() {
+            const customPrompt = document.getElementById('custom-prompt').value.trim();
+            
+            if (!customPrompt) {
+                showStatus('Please enter a system prompt', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/save-system-prompt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        prompt: customPrompt,
+                        template: currentTemplate,
+                        save: true
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    customSystemPrompt = customPrompt;
+                    document.getElementById('active-template').textContent = 
+                        customPrompt.length > 30 ? 'Custom Prompt' : promptTemplates[currentTemplate]?.name || 'Custom';
+                    document.getElementById('last-updated').textContent = new Date().toLocaleString();
+                    showStatus('System prompt saved and applied successfully!', 'success');
+                } else {
+                    showStatus('Error: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showStatus('Failed to save system prompt', 'error');
+                console.error('Error:', error);
+            }
+        }
+
+        async function testSystemPrompt() {
+            const customPrompt = document.getElementById('custom-prompt').value.trim();
+            
+            if (!customPrompt) {
+                showStatus('Please enter a system prompt to test', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/save-system-prompt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        prompt: customPrompt,
+                        template: currentTemplate,
+                        save: false
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    customSystemPrompt = customPrompt;
+                    showStatus('System prompt applied for testing! Try asking a question.', 'success');
+                } else {
+                    showStatus('Error: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showStatus('Failed to apply test prompt', 'error');
+                console.error('Error:', error);
+            }
+        }
+
+        async function resetToDefault() {
+            if (!confirm('Reset to default Sales Expert template? This will clear your custom prompt.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/reset-system-prompt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Reset UI
+                    document.querySelectorAll('.template-button').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    document.querySelector('[onclick*="salesperson"]').classList.add('active');
+                    document.getElementById('custom-prompt').value = '';
+                    
+                    currentTemplate = 'salesperson';
+                    customSystemPrompt = null;
+                    document.getElementById('active-template').textContent = 'Sales Expert';
+                    document.getElementById('last-updated').textContent = new Date().toLocaleString();
+                    
+                    showStatus('Reset to default Sales Expert template!', 'success');
+                } else {
+                    showStatus('Error: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showStatus('Failed to reset to default', 'error');
+                console.error('Error:', error);
+            }
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('prompt-status');
+            statusDiv.textContent = message;
+            statusDiv.className = `prompt-status ${type}`;
+            
+            // Clear status after 5 seconds
+            setTimeout(() => {
+                statusDiv.textContent = '';
+                statusDiv.className = 'prompt-status';
+            }, 5000);
+        }
+
+        // Load current system prompt on page load
+        async function loadCurrentPrompt() {
+            try {
+                const response = await fetch('/get-current-prompt');
+                const data = await response.json();
+                
+                if (data.success) {
+                    if (data.template) {
+                        currentTemplate = data.template;
+                        document.getElementById('active-template').textContent = 
+                            promptTemplates[data.template]?.name || 'Custom';
+                    }
+                    if (data.lastUpdated) {
+                        document.getElementById('last-updated').textContent = 
+                            new Date(data.lastUpdated).toLocaleString();
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading current prompt:', error);
+            }
+        }
+
+        // Load KB stats on page load
+        loadKnowledgeBaseStats();
+        loadCurrentPrompt();
+        setInterval(loadKnowledgeBaseStats, 30000); // Refresh every 30 seconds
+    </script>
+</body>
+</html>
