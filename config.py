@@ -1,11 +1,15 @@
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class Config:
     """Application configuration from environment variables"""
     
     # OpenAI Configuration
     OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+    print(OPENAI_API_KEY)
     OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-3.5-turbo')
     MAX_TOKENS = int(os.environ.get('MAX_TOKENS', 500))
     TEMPERATURE = float(os.environ.get('TEMPERATURE', 0.7))
@@ -30,9 +34,7 @@ class Config:
     def validate(cls):
         """Validate required configuration"""
         if not cls.OPENAI_API_KEY:
-            # In Vercel, allow empty API key during build time
-            if not os.environ.get('VERCEL'):
-                raise ValueError("OPENAI_API_KEY environment variable is required")
+            raise ValueError("OPENAI_API_KEY environment variable is required")
     
     @classmethod
     def create_directories(cls):
